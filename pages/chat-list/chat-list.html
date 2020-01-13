@@ -1,0 +1,213 @@
+<!doctype html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="../../css/mui.min.css" rel="stylesheet" />
+        <link href="../../css/header.css" rel="stylesheet" />
+		<style>
+			html,
+			body {
+				height: 100%;
+			}
+			
+			.mui-content {
+				height: 100%;
+				overflow: auto;
+			}
+			
+			.red-point{
+	          position: relative;
+	        }
+	
+	        .red-point::before{
+	          content: " ";
+	          border: 5px solid #C9394A;/*设置红色*/
+	          border-radius:5px;/*设置圆角*/
+	          position: absolute;
+	          z-index: 3000;
+	          right: 0%;
+	          margin-right: -10px;
+	          margin-top: 0px;
+	        }
+		</style>
+	</head>
+
+	<body>
+		<header class="mui-bar mui-bar-nav title">
+			<h1 class="mui-title title-color" id="chat-title">雀信</h1>
+		</header>
+		<div class="mui-content">
+            <div class="mui-indexed-list-search mui-input-row mui-search">
+            	<input style="background-color: #fff;" type="search" 
+                class="mui-input-clear mui-indexed-list-search-input" placeholder="搜索">
+            </div>
+
+			<ul id="ul_chatSnapshot" class="mui-table-view">
+				<li class="mui-table-view-cell mui-media">
+					<div class="mui-slider-right mui-disabled">
+						<a class="mui-btn mui-btn-red">删除</a>
+					</div>
+		            <div class="mui-slider-handle mui-media-body">
+			            <img class="mui-media-object mui-pull-left" src="image/face-default-cat.png"/>
+			            	<span class="red-point">慕课网</span>
+			            <p class="mui-ellipsis">这里是聊天内容...</p>
+		            </div>
+			    </li>
+			   <li class="mui-table-view-cell mui-media">
+		            <div class="mui-media-body">
+			            <img class="mui-media-object mui-pull-left" src="image/face-default-cat.png"/>
+			            	甲
+			            <p class="mui-ellipsis">这里是聊天内容...</p>
+		            </div>
+			    </li>
+			    <li class="mui-table-view-cell mui-media">
+		            <div class="mui-media-body">
+			            <img class="mui-media-object mui-pull-left" src="image/face-default-cat.png"/>
+			            	乙
+			            <p class="mui-ellipsis">这里是聊天内容...</p>
+		            </div>
+			    </li>
+			    <li class="mui-table-view-cell mui-media">
+		            <div class="mui-media-body">
+			            <img class="mui-media-object mui-pull-left" src="image/face-default-cat.png"/>
+			            	丙
+			            <p class="mui-ellipsis">这里是聊天内容...</p>
+		            </div>
+			    </li>
+			    <li class="mui-table-view-cell mui-media">
+		            <div class="mui-media-body">
+			            <img class="mui-media-object mui-pull-left" src="image/face-default-cat.png"/>
+			            	丁
+			            <p class="mui-ellipsis">这里是聊天内容...</p>
+		            </div>
+			    </li>
+			</ul>
+		</div>
+		<script src="../../js/mui.min.js"></script>
+		<script src="../../js/app.js"></script>
+		<script type="text/javascript">
+			mui.init()
+            
+			var myInfo = app.getUserGlobalInfo();
+            // webscoket客户端
+            window.Chat = {
+                socket: null,
+                init: function () {
+                    if (window.WebSocket) {
+                        // 如果当前设备已建立连接，则不需要重新建立连接
+                        if (Chat.socket != null && Chat.socket != undefined 
+                            && Chat.socket.readyState == WebSocket.OPEN) {
+                            return false;
+                        }
+                        // 初始化一个websocket连接
+                        Chat.socket = new WebSocket(app.nettyServerUrl);
+                        Chat.socket.onopen = Chat.wsOpen,
+                        Chat.socket.onclose = Chat.wsClose,
+                        Chat.socket.onerror = Chat.wsError,
+                        Chat.socket.onmessage = Chat.wsOnMessage;
+                    } else {
+                        alert("手机设备过旧")
+                    }
+                },
+                chat: function (msg) {
+                    // 只有websocket建立了连接才能发送消息
+                    if (Chat.socket != null && Chat.socket != undefined
+                        && Chat.socket.readyState == WebSocket.OPEN) {
+                        Chat.sendMsg(msg);
+                    } else {
+                        // 先检查网络状态
+                        var connectionStatus = plus.networkinfo.getCurrentType();
+                        if (connectionStatus === 0 || connectionStatus === 1) {
+                            app.showToast("无网络连接，不能发送消息", "error");
+                            return false;
+                        }
+                        // 否则，重新建立连接，再发送消息
+                        Chat.init();
+                        // 获取开始时间的时间戳
+                        var startTime = Date.parse(new Date());
+                        // 阻塞直到webscoket连接建立完毕
+                        while(Chat.socket.readyState !== WebSocket.OPEN){
+                            var endTime = Date.parse(new Date());
+                            if (endTime - startTime > 3000) {
+                                app.showToast("发送失败", "error");
+                                break;
+                            }
+                        }
+                        // 重新发送消息
+                        Chat.sendMsg(msg);
+                    }
+                },
+                sendMsg: function (msg) {
+                    // 获取消息内容
+                    var content = JSON.parse(msg).chatMsgBo.content;
+                    Chat.socket.send(msg);
+                    // 调用聊天页面的方法来刷新消息列表
+                    var chatWebview = plus.webview.getWebviewById("chating-200110HC3DK78PH0");
+                    var info = {
+                    	sender: 'self',
+                    	type: 'text', 
+                    	content: content
+                    };
+                    chatWebview.evalJS("refreshMsgList('" + JSON.stringify(info) + "')")
+                },
+                wsOpen: function () {
+                    console.log("websocket连接建立成功");
+                    // 构建一个ChatMsg
+                    var chatMsgBo = new app.ChatMsgBo(myInfo.id, null, null, null, null);
+                    // 构建一个MsgContent
+                    var msgContent = new app.MsgContent(app.CONNECT, chatMsgBo, null);
+                    // 发送初始化连接的消息
+                    Chat.socket.send(JSON.stringify(msgContent));
+                },
+                wsError: function () {
+                    console.log("websocket连接发生错误");
+                },
+                wsClose: function () {
+                    console.log("websocket连接关闭");
+                },
+                wsOnMessage: function (e) {
+                    var chatWebview = plus.webview.getWebviewById("chating-200110HC3DK78PH0");
+                    var finfo = {
+						sender: 'zs',
+						type: 'text', 
+						content: e.data
+					};
+                    var finfoStr = JSON.stringify(finfo);
+                    // 调用wsWebview中的方法来发送消息
+                    // 这里只能传字符串，所以需要把对象序列化为JSON字符串
+                    chatWebview.evalJS("receive('" + finfoStr + "')");
+                }
+            };
+            
+			mui.plusReady(function() {
+                var connectionStatus = plus.networkinfo.getCurrentType();
+                if (connectionStatus === 0 || connectionStatus === 1) {
+                    document.getElementById("chat-title").innerText = "雀信[离线]";
+                }
+                // 监听网络变化，设置对应的标题
+                netChangeListener();
+                // // 初始化websocket
+                // Chat.init();
+                // 添加自定义事件，初始化websocket
+                window.addEventListener("init_websocket", function(){
+                	Chat.init();
+                });
+            });
+            
+            function netChangeListener() {
+                document.addEventListener("netchange", function(){
+                    var connectionStatus = plus.networkinfo.getCurrentType();
+                    if (connectionStatus !== 0 && connectionStatus !== 1) {
+                        document.getElementById("chat-title").innerText = "雀信";
+                    } else {
+                        document.getElementById("chat-title").innerText = "雀信[离线]";
+                    }
+                })
+            }
+		</script>
+	</body>
+
+</html>

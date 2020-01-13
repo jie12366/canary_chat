@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="../../css/mui.css" rel="stylesheet" />
+        <link href="../../css/header.css" rel="stylesheet" />
+        <style>
+            #scan_qrcode{
+                width: 100%;
+                top: 44px;
+                bottom: 0;
+                position: absolute;
+                text-align: center;
+                background-color: #000000;
+            }
+        </style>
+	</head>
+
+	<body>
+        <header class="mui-bar mui-bar-nav title">
+            <a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left" style="color: #fff;"></a>
+            <h1 class="mui-title title-color">扫一扫</h1>
+        </header>
+        
+        <div id="scan_qrcode"></div>
+        
+		<script src="../../js/mui.js"></script>
+        <script src="../../js/app.js"></script>
+		<script type="text/javascript">
+			mui.init()
+            mui.plusReady(function () {
+                setTimeout(startScan(), 500);
+            })
+
+            function startScan(){
+                var barcode_style = {
+                	frameColor: "#91ED61",
+                	scanbarColor: "#10AEFF"
+                };
+                // 初始化扫码识别控件
+                var scan = new plus.barcode.Barcode("scan_qrcode", [0], barcode_style);
+                scan.onmarked = onmarked;
+                // 开始扫描
+                scan.start();
+            }
+            
+            function onmarked(type, result){
+                if (type === 0) {
+                    var content = result.split("chat_qrcode:");
+                    if (content.length != 2) {
+                        // 如果不是该app的账号，则直接显示扫描结果
+                        mui.alert(result, "扫描结果");
+                    } else {
+                        var friendUsername = content[1];
+                        mui.ajax(app.serverUrl + "/friends/username",{
+                        	data:{
+                             friendUsername: friendUsername
+                         },
+                        	dataType:'json',// 服务器返回json格式数据
+                        	type:'post',// HTTP请求类型
+                        	timeout:10000,// 超时时间设置为10秒；
+                        	headers:{'Content-Type':'application/x-www-form-urlencoded'},	              
+                        	success:function(data){
+                        		if (data.code == 200) {
+                        			mui.openWindow({
+                                     url: "friend-info.html",
+                                     id: "friend-info.html",
+                                     extras: {
+                                         friendInfo: data.data
+                                     }
+                                 });
+                        		} else {
+                        			app.showToast(data.msg, "error");
+                        		}
+                        	}
+                        });
+                    }
+                }
+            }
+		</script>
+	</body>
+
+</html>

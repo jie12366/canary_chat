@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="../../css/mui.css" rel="stylesheet" />
+        <link href="../../css/header.css" rel="stylesheet" />
+	</head>
+
+	<body>
+        <header class="mui-bar mui-bar-nav title">
+            <a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left" style="color: #fff;"></a>
+            <a id="submit_search" class="mui-icon mui-icon-right-nav mui-pull-right" 
+            style="color: #fff;font-size:0.875rem; line-height: 1.875rem;">搜索</a>
+            <h1 class="mui-title title-color">添加朋友</h1>
+        </header>
+        
+        <div class="mui-content" style="background-color: #E9E9E9;height: 40.3125rem">
+            <div class="mui-input-row mui-search" style="margin-top: 1.25rem;">
+                <input id="search_txt" type="search" class="mui-input-clear" placeholder="雀信号"
+                style="background-color: #fff;">
+            </div>
+        </div>
+        
+		<script src="../../js/mui.js"></script>
+        <script src="../../js/app.js"></script>
+		<script type="text/javascript">
+			mui.init()
+            
+            mui.plusReady(function () {
+               var user = app.getUserGlobalInfo();
+               var search_txt = document.getElementById("search_txt");
+               var submit_search = document.getElementById("submit_search");
+               submit_search.addEventListener("tap", function(){
+                   search_txt.blur();
+                   var my_friend_username = search_txt.value;
+                   plus.nativeUI.showWaiting("搜索中...");
+                   mui.ajax(app.serverUrl + "/friends/search",{
+                   	data:{
+                        myUserId: user.id,
+                        friendUsername: my_friend_username
+                    },
+                   	dataType:'json',// 服务器返回json格式数据
+                   	type:'post',// HTTP请求类型
+                   	timeout:10000,// 超时时间设置为10秒；
+                   	headers:{'Content-Type':'application/x-www-form-urlencoded'},	              
+                   	success:function(data){
+                   		// 关闭等待框
+                   		plus.nativeUI.closeWaiting();
+                   		if (data.code == 200) {
+                   			mui.openWindow({
+                                url: "friend-info.html",
+                                id: "friend-info.html",
+                                styles: {},
+                                extras: {
+                                    friendInfo: data.data
+                                }
+                            });
+                   		} else {
+                   			app.showToast(data.msg, "error");
+                   		}
+                   	}
+                   });
+               })
+            });
+		</script>
+	</body>
+
+</html>

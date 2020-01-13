@@ -1,0 +1,123 @@
+<!doctype html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="../../css/mui.css" rel="stylesheet" />
+        <link href="../../css/header.css" rel="stylesheet" />
+	</head>
+
+	<body>
+        
+        <header class="mui-bar mui-bar-nav title">
+            <a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left" style="color: #fff;"></a>
+            <a id="open_menu" class="mui-icon mui-icon-right-nav mui-pull-right" 
+            style="color: #fff;margin-top: -0.3125rem;height: 3.125rem;">...</a>
+            <h1 class="mui-title title-color">头像预览</h1>
+        </header>
+        
+        <div class="mui-content">
+            <img id="my_face" src="" />
+        </div>
+        
+        <div id="sheet_my_face" class="mui-popover mui-popover-bottom mui-popover-action ">
+            <!-- 可选择菜单 -->
+            <ul class="mui-table-view">
+              <li class="mui-table-view-cell">
+                <a id="link_select_image" href="#">选择头像</a>
+              </li>
+              <li class="mui-table-view-cell">
+                <a id="link_save_image" href="#">保存头像</a>
+              </li>
+            </ul>
+            <!-- 取消菜单 -->
+            <ul class="mui-table-view">
+              <li class="mui-table-view-cell">
+                <a href="#sheet_my_face"><b>取消</b></a>
+              </li>
+            </ul>
+        </div>
+        
+		<script src="../../js/mui.js"></script>
+        <script src="../../js/app.js"></script>
+		<script type="text/javascript">
+			mui.init()
+            
+            mui.plusReady(function () {
+                // 刷新我的头像
+                refreshMyFace();
+                
+                // 添加自定义事件，刷新头像
+                window.addEventListener("refresh_myface", function(){
+                    refreshMyFace();
+                })
+                
+                // 打开选择菜单
+                var open_menu = document.getElementById("open_menu");
+                open_menu.addEventListener("tap", function(){
+                    mui("#sheet_my_face").popover("toggle");
+                });
+                
+                // 选择头像事件
+                var select_image = document.getElementById("link_select_image");
+                select_image.addEventListener("tap", function(){
+                    // 跳转到头像上传页面
+                    mui.openWindow({
+                        url: "myface-uploader.html", 
+                        id: "myface-uploader.html",
+                        createNew: true
+                    });
+                    // 关闭菜单
+                    mui("#sheet_my_face").popover("toggle");
+                })
+                
+                // 保存头像事件
+                var save_image = document.getElementById("link_save_image");
+                save_image.addEventListener("tap", function(){
+                    plus.nativeUI.showWaiting("下载中...");
+                    var tast = plus.downloader.createDownload(
+                        user.faceImageBig,
+                        {},
+                        function(downloadFile, status){
+                            plus.nativeUI.closeWaiting();
+                            // 关闭菜单
+                            mui("#sheet_my_face").popover("toggle");
+                            if(status == 200){
+                                // 获取文件的临时路径
+                                var tmpFile = downloadFile.filename;
+                                // 下载文件
+                                plus.gallery.save(tmpFile, function(){
+                                    app.showToast("保存头像成功", "success");
+                                })
+                            }else{
+                                console.log("下载失败");
+                                app.showToast("下载错误", "error");
+                            }
+                        }
+                    );
+                    // 启动下载任务
+                    tast.start();
+                })
+            })
+            
+            function refreshMyFace(){
+                // 获取账号信息
+                var user = app.getUserGlobalInfo();
+                let my_face_image = document.getElementById("my_face");
+                // 如果头像存在则设置，不存在就用默认的
+                if (app.isNotNull(user.faceImage)){
+                    my_face_image.src = user.faceImageBig;
+                } else {
+                   my_face_image.src = "https://pic.feizl.com/upload/allimg/190123/gxtxjslmijsvh4m.jpg";
+                }
+                // 获取手机端的可见屏幕的宽度
+                var clientWidth = document.body.clientWidth;
+                my_face_image.width = clientWidth;
+                my_face_image.height = clientWidth;
+            }
+		</script>
+	</body>
+
+</html>

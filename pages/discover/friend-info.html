@@ -1,0 +1,162 @@
+<!doctype html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="../../css/mui.css" rel="stylesheet" />
+        <link href="../../iconfont/iconfont.css" rel="stylesheet" />
+        <link href="../../css/header.css" rel="stylesheet" />
+        <style>
+            .hide{
+                display: none;
+            }
+            .icon-yinshipin{
+                font-size: 1.875rem;
+            }
+        </style>
+	</head>
+
+	<body>
+        <header class="mui-bar mui-bar-nav title">
+            <a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left" style="color: #fff;"></a>
+            <h1 class="mui-title title-color">好友资料</h1>
+        </header>
+        
+        <div class="mui-content" style="margin-top: 1.291875rem;">
+            <div style="background-color: #fff;height: 5rem">
+                <img id="friend_face" src="" width="60px" 
+                style="border-radius: 5%;float: left;margin-left: 0.9375rem;margin-top: 0.625rem;"/>
+                <div class="mui-media-body" style="float: left;margin-left: 1.25rem;margin-top: 1.25rem;">
+                    <label id="friend_nickname"></label>
+                    <p id="friend_username" class="mui-ellipsis"></p>
+                </div>
+            </div>
+            <br />
+            
+            <ul id="add_friend" class="mui-table-view">
+                <li class="mui-table-view-cell">
+                    <a id="link_add_friend" style="text-align: center;color: #2782D7;font-size: 18px;">
+                        添加到通讯录
+                    </a>
+                </li>
+            </ul>
+            
+            <ul id="my_friend" class="mui-table-view">
+                <li id="send_message" class="mui-table-view-cell">
+                    <a class="mui-icon mui-icon-chat" id="link_add_friend" 
+                    style="color: #2782D7;font-size: 18px;line-height: 2.5rem;text-align: center;">
+                        发消息
+                    </a>
+                </li>
+                <li id="yinshipin" class="mui-table-view-cell">
+                    <a class="mui-icon iconfont icon-yinshipin" id="link_add_friend" 
+                    style="color: #2782D7;font-size: 18px;line-height: 2.5rem;text-align: center;">
+                        音视频通话
+                    </a>
+                </li>
+            </ul>
+        </div>
+        
+		<script src="../../js/mui.js"></script>
+        <script src="../../js/app.js"></script>
+		<script type="text/javascript">
+			mui.init()
+            
+            mui.plusReady(function () {
+                var myInfo = app.getUserGlobalInfo();
+                // 获取页面传来的数据
+                var currentWebview = plus.webview.currentWebview();
+                var friendInfo = currentWebview.friendInfo;
+                // 设置好友信息
+                var friend_face = document.getElementById("friend_face");
+                var friend_nickname = document.getElementById("friend_nickname");
+                var friend_username = document.getElementById("friend_username");
+                friend_face.src = friendInfo.faceImage;
+                friend_nickname.innerText = friendInfo.nickname;
+                friend_username.innerText = "账号：" + friendInfo.username;
+                
+                // 查询是否是我的好友，设置页面
+                // 1. 如果是我的好友，则显示发消息和音视频通话按钮
+                // 2. 如果不是我的好友，则显示添加到通讯录
+                // 3. 如果是我自己的账号，则跳转到个人信息界面
+                queryIsMyFriend(myInfo.id, friendInfo.username);
+                
+                // 发送添加好友请求
+                var link_add_friend = document.getElementById("link_add_friend");
+                link_add_friend.addEventListener("tap", function(){
+                    plus.nativeUI.showWaiting("请求中...");
+                    mui.ajax(app.serverUrl + "/friendRequest",{
+                    	data:{
+                         myUserId: myInfo.id,
+                         friendUsername: friendInfo.username
+                     },
+                    	dataType:'json',// 服务器返回json格式数据
+                    	type:'post',// HTTP请求类型
+                    	timeout:10000,// 超时时间设置为10秒；
+                    	headers:{'Content-Type':'application/x-www-form-urlencoded'},	              
+                    	success:function(data){
+                    		// 关闭等待框
+                    		plus.nativeUI.closeWaiting();
+                    		if (data.code == 200) {
+                                app.showToast("添加好友请求已发送", "success");
+                                // 触发好友请求页面的自定义事件，刷新好友请求列表
+                                var friendRequestWebview = plus.webview.getWebviewById("new-friends");
+                                mui.fire(friendRequestWebview, "refresh_request_list");
+                    		} else {
+                    			app.showToast(data.msg, "error");
+                    		}
+                    	}
+                    });
+                })
+                
+                // 给好友发消息
+                var send_message = document.getElementById("send_message");
+                send_message.addEventListener("tap", function(){
+                    mui.openWindow({
+                        url: "../chat-list/chating.html",
+                        id: "chating-" + friendInfo.id, // 每个好友的聊天页面都是唯一对应的
+                        extras: {
+                            friendInfo: friendInfo
+                        }
+                    })
+                })
+            })
+            
+            // 查询该账号是否是我的好友
+            function queryIsMyFriend(userId, friendUsername) {
+                mui.ajax(app.serverUrl + "/friends/search",{
+                	data:{
+                     myUserId: userId,
+                     friendUsername: friendUsername
+                 },
+                	dataType:'json',// 服务器返回json格式数据
+                	type:'post',// HTTP请求类型
+                	timeout:10000,// 超时时间设置为10秒；
+                	headers:{'Content-Type':'application/x-www-form-urlencoded'},	              
+                	success:function(data){
+                        var add_friend = document.getElementById("add_friend");
+                        var send_message = document.getElementById("send_message");
+                        var yinshipin = document.getElementById("yinshipin");
+                        if (data.code === 200) {
+                            // 隐藏发消息和音视频通话按钮
+                            send_message.classList.add("hide");
+                            yinshipin.classList.add("hide");
+                        }
+                		if (data.code === 500) {
+                            if (data.msg == "该账号已经是你的好友") {
+                                // 隐藏添加到通讯录按钮
+                                add_friend.classList.add("hide");
+                            } else if (data.msg == "不能添加自己") {
+                                // 如果是自己的账号则跳转到个人信息页面
+                                mui.openWindow("../mine/mine.html", "mine.html");
+                            }
+                		}
+                	}
+                });
+            }
+		</script>
+	</body>
+
+</html>

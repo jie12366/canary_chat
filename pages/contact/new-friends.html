@@ -31,8 +31,9 @@
         <script src="../../js/app.js"></script>
 		<script type="text/javascript">
 			mui.init()
-            var user = app.getUserGlobalInfo();
+            var user;
             mui.plusReady(function () {
+               user = app.getUserGlobalInfo()
                // 获取好友请求列表
                getFriendRequestList();
                var curr = plus.webview.currentWebview();
@@ -107,7 +108,7 @@
                     for (var i = 0; i < friendRequestList.length; ++i) {
                         // 如果好友还没上传头像，这里就使用默认头像
                         if (!app.isNotNull(friendRequestList[i].sendFaceImage)) {
-                            friendRequestList[i].sendFaceImage = "https://pic.feizl.com/upload/allimg/190123/gxtxjslmijsvh4m.jpg";
+                            friendRequestList[i].sendFaceImage = app.defaultFace;
                         }
                         requestHtml += renderFriendsRequest(friendRequestList[i]);
                     }
@@ -116,12 +117,16 @@
                     // 动态绑定忽略请求事件
                     mui('.btnOper').on("tap", ".ignoreRequest", function(){
                         let friendId = this.getAttribute("friendId");
-                        operatorFriendsRequest(user.id, friendId, 1);
+                        let friendNickname = this.getAttribute("friendNickname");
+                        let acceptRemark = this.getAttribute("acceptRemark");
+                        operatorFriendsRequest(user.id, friendId, 1, friendNickname, acceptRemark);
                     })
                     // 动态绑定通过请求事件
                     mui('.btnOper').on("tap", ".passRequest", function(){
                         let friendId = this.getAttribute("friendId");
-                        operatorFriendsRequest(user.id, friendId, 2);
+                        let friendNickname = this.getAttribute("friendNickname");
+                        let acceptRemark = this.getAttribute("acceptRemark");
+                        operatorFriendsRequest(user.id, friendId, 2, friendNickname, acceptRemark);
                     })
                 } else {
                     // 还没有好友请求
@@ -130,18 +135,20 @@
             }
             
             // 操作好友请求
-            function operatorFriendsRequest(userId, friendId, type){
+            function operatorFriendsRequest(userId, friendId, type, friendRemark, myRemark){
                 plus.nativeUI.showWaiting("正在处理...");
                 mui.ajax(app.serverUrl + "/friendRequest",{
                 	data:{
                      userId: userId,
                      friendId: friendId,
-                     type: type
+                     type: type,
+                     friendRemark: friendRemark,
+                     myRemark: myRemark
                  },
                 	dataType:'json',// 服务器返回json格式数据
                 	type:'put',// HTTP请求类型
                 	timeout:10000,// 超时时间设置为10秒；
-                	headers:{'Content-Type':'application/x-www-form-urlencoded'},	              
+                	headers:{'Content-Type':'application/json'},	              
                 	success:function(data){
                 		// 关闭等待框
                 		plus.nativeUI.closeWaiting();
@@ -150,11 +157,15 @@
                                 app.showToast("已忽略", "success");
                             } else if (type == 2){
                                 app.showToast("已通过", "success");
-                                // 刷新好友请求列表
-                                loadingFriendsRequest();
                                 // 更新通讯录
                                 app.setFriendList(data.data);
+                                var contactWebview = plus.webview.getWebviewById("contact");
+                                mui.fire(contactWebview, "refresh_friend");
                             }
+                            // 重新加载好友请求列表
+                            getFriendRequestList();
+                            // 重新渲染好友请求列表
+                            loadingFriendsRequest();
                 		} else {
                 			app.showToast(data.msg, "error");
                 		}
@@ -168,8 +179,8 @@
                 // 拼接好友请求的html和对应的值
                 html = '<li class="btnOper mui-table-view-cell">' + 
                             '<div class="mui-slider-right mui-disabled">' + 
-                                '<button friendId="' + friend.sendUserId + '" class="ignoreRequest mui-btn mui-btn-grey">忽略</button>' + 
-                                '<button friendId="' + friend.sendUserId + '" class="passRequest mui-btn mui-btn-yellow">通过</button>' + 
+                                '<button friendId="' + friend.sendUserId + '" friendNickname="' + friend.sendNickname +'" acceptRemark="' + friend.acceptRemark + '" class="ignoreRequest mui-btn mui-btn-grey">忽略</button>' + 
+                                '<button friendId="' + friend.sendUserId + '" friendNickname="' + friend.sendNickname +'" acceptRemark="' + friend.acceptRemark + '" class="passRequest mui-btn mui-btn-yellow">通过</button>' + 
                             '</div>' + 
                             '<div class="mui-slider-handle">' + 
                                 '<div class="mui-table-cell">' + 
@@ -177,7 +188,7 @@
                                         '<img id="friend_face" src="' + friend.sendFaceImage +'" width="40px" style="border-radius: 5%;float: left;"/>' + 
                                         '<div class="mui-media-body" style="float: left;margin-left: 1rem;">' + 
                                             '<label id="friend_nickname">' + friend.sendNickname +'</label>' + 
-                                            '<p id="friend_username" class="mui-ellipsis">请求添加你为朋友</p>' + 
+                                            '<p id="friend_username" class="mui-ellipsis">' + friend.verifyMessage + '</p>' + 
                                         '</div>' + 
                                         '<div style="float: right">' +
                                             '<p id="request_status" style="line-height:40px">' + friend.requestStatus + '</p>' + 

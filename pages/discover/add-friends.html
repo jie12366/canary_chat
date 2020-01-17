@@ -37,9 +37,8 @@
                    search_txt.blur();
                    var my_friend_username = search_txt.value;
                    plus.nativeUI.showWaiting("搜索中...");
-                   mui.ajax(app.serverUrl + "/friends/search",{
+                   mui.ajax(app.serverUrl + "/friends/",{
                    	data:{
-                        myUserId: user.id,
                         friendUsername: my_friend_username
                     },
                    	dataType:'json',// 服务器返回json格式数据

@@ -73,7 +73,12 @@
                 var friend_face = document.getElementById("friend_face");
                 var friend_nickname = document.getElementById("friend_nickname");
                 var friend_username = document.getElementById("friend_username");
-                friend_face.src = friendInfo.faceImage;
+                if (app.isNotNull(friendInfo.faceImage)) {
+                    friend_face.src = friendInfo.faceImage;
+                }
+                else {
+                    friend_face.src = app.defaultFace;
+                }
                 friend_nickname.innerText = friendInfo.nickname;
                 friend_username.innerText = "账号：" + friendInfo.username;
                 
@@ -86,28 +91,12 @@
                 // 发送添加好友请求
                 var link_add_friend = document.getElementById("link_add_friend");
                 link_add_friend.addEventListener("tap", function(){
-                    plus.nativeUI.showWaiting("请求中...");
-                    mui.ajax(app.serverUrl + "/friendRequest",{
-                    	data:{
-                         myUserId: myInfo.id,
-                         friendUsername: friendInfo.username
-                     },
-                    	dataType:'json',// 服务器返回json格式数据
-                    	type:'post',// HTTP请求类型
-                    	timeout:10000,// 超时时间设置为10秒；
-                    	headers:{'Content-Type':'application/x-www-form-urlencoded'},	              
-                    	success:function(data){
-                    		// 关闭等待框
-                    		plus.nativeUI.closeWaiting();
-                    		if (data.code == 200) {
-                                app.showToast("添加好友请求已发送", "success");
-                                // 触发好友请求页面的自定义事件，刷新好友请求列表
-                                var friendRequestWebview = plus.webview.getWebviewById("new-friends");
-                                mui.fire(friendRequestWebview, "refresh_request_list");
-                    		} else {
-                    			app.showToast(data.msg, "error");
-                    		}
-                    	}
+                    mui.openWindow({
+                        url: "request-message.html",
+                        id: "request-message.html",
+                        extras: {
+                            friendInfo: friendInfo
+                        }
                     });
                 })
                 

@@ -1,0 +1,93 @@
+<!doctype html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="../../css/mui.min.css" rel="stylesheet" />
+        <link href="../../css/header.css" rel="stylesheet" />
+	</head>
+
+	<body style="background-color: #fff;">
+        <header class="mui-bar mui-bar-nav title">
+            <a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left" style="color: #fff;"></a>
+            <a id="send" class="mui-icon mui-icon-right-nav mui-pull-right"
+            style="color: #fff;font-size:0.875rem; line-height: 1.875rem;">发送</a>
+            <h1 class="mui-title title-color">申请添加朋友</h1>
+        </header>
+        
+        <div class="mui-content" style="margin-top: 1.875rem;background-color: #fff;">
+            <label style="margin-left: 1.40625rem;color: #AAAAAA;font-size: 0.875rem">发送添加朋友申请</label>
+            <textarea id="request_message" style="height:6.25rem;width: 20.625rem;margin-left: 1.40625rem;
+            margin-top: 0.1875rem;background-color: #F1F1F1;border: none;"></textarea>
+            
+            <label style="margin-left: 1.40625rem;color: #AAAAAA;font-size: 0.875rem">设置备注</label>
+            <input id="mark_text" type="text" style="width: 20.625rem;margin-left: 1.40625rem;
+            margin-top: 0.1875rem;background-color: #F1F1F1;border: none;"/>
+        </div>
+		<script src="../../js/mui.min.js"></script>
+        <script src="../../js/app.js"></script>
+		<script type="text/javascript">
+			mui.init()
+            
+            mui.plusReady(function () {
+                var currentWebview = plus.webview.currentWebview();
+                var friendInfo = currentWebview.friendInfo;
+                var myInfo = app.getUserGlobalInfo();
+                // 给输入框赋默认值
+                var request_message = document.getElementById("request_message");
+                var mark_text = document.getElementById("mark_text");
+                request_message.value = "我是" + myInfo.nickname;
+                mark_text.value = friendInfo.nickname;
+                
+                var send = document.getElementById("send");
+                send.addEventListener("tap", function(){
+                    var requestMessage = "";
+                    if (app.isNotNull(request_message.value)) {
+                        requestMessage = request_message.value;
+                    } else {
+                        requestMessage = "请求添加你为朋友";
+                    }
+                    var remark = "";
+                    if (app.isNotNull(mark_text.value)) {
+                        remark = mark_text.value;
+                    } else {
+                        remark = friendInfo.nickname;
+                    }
+                    plus.nativeUI.showWaiting("发送中...");
+                    mui.ajax(app.serverUrl + "/friendRequest",{
+                    	data:{
+                         sendUserId: myInfo.id,
+                         acceptUsername: friendInfo.username,
+                         verifyMessage: requestMessage,
+                         acceptRemark: remark
+                     },
+                    	dataType:'json',// 服务器返回json格式数据
+                    	type:'post',// HTTP请求类型
+                    	timeout:10000,// 超时时间设置为10秒；
+                    	headers:{'Content-Type':'application/json'},	              
+                    	success:function(data){
+                    		// 关闭等待框
+                    		plus.nativeUI.closeWaiting();
+                    		if (data.code == 200) {
+                                app.showToast("添加好友请求已发送", "success");
+                                // 触发好友请求页面的自定义事件，刷新好友请求列表
+                                var friendRequestWebview = plus.webview.getWebviewById("new-friends");
+                                mui.fire(friendRequestWebview, "refresh_request_list");
+                                
+                    		} else {
+                    			app.showToast(data.msg, "error");
+                    		}
+                    	},
+                        error: function(e){
+                            plus.nativeUI.closeWaiting();
+                            app.showToast("请求错误!", "error");
+                        }
+                    });
+                })
+            })
+		</script>
+	</body>
+
+</html>

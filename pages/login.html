@@ -83,6 +83,7 @@
 				var username = document.getElementById("username");
 				var txt_password = document.getElementById("txt_password");
 				userform.addEventListener("submit", function(e) {
+                    plus.nativeUI.showWaiting("登录中...");
 					// 判断用户名是否为空，如果为空则让其获得焦点
 					if (!app.isNotNull(username.value)) {
 						// 获取焦点
@@ -122,9 +123,10 @@
 									// 登录或者注册成功之后，保存全局用户对象到本地缓存
 									var userInfoJson = data.data;
 									app.setUserGlobalInfo(userInfoJson);
-                                    
                                     // 刷新本地缓存
                                     app.refreshInfo();
+                                    // 关闭等待
+                                    plus.nativeUI.closeWaiting();
 									// 页面跳转
 									mui.openWindow("../index.html", "index.html");
 								} else {

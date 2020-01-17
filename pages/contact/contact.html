@@ -87,6 +87,11 @@
                     showList();
                 })
                 
+                window.addEventListener("refresh_friend", function() {
+                    // 重新渲染好友列表
+                    renderFriendListPage();
+                })
+                
                 // 添加自定义监听事件，刷新好友列表
                 window.addEventListener("refresh_contact", function() {
                     getFriendList();
@@ -176,8 +181,9 @@
                         var nicknameStart = enWords[i];
                         contactHtml += '<li data-group="' + nicknameStart + '" style="font-size: 12px" class="mui-table-view-divider mui-indexed-list-group">' + nicknameStart + '</li>';
                         for (var j = 0; j < friendArray.length; ++j){
+                            var faceImage = friendArray[j].faceImage == ""? app.defaultFace : friendArray[j].faceImage;
                             contactHtml += '<li id="to_friend_info" friendUsername=' + friendArray[j].username + ' class="mui-media mui-table-view-cell mui-indexed-list-item" style="padding: 0.625rem 1rem;">' + 
-                                                '<img class="mui-media-object mui-pull-left" src="' + friendArray[j].faceImage + '" style="max-width: 2.5rem;max-height: 2.5rem;border-radius: 8%"/>' + 
+                                                '<img class="mui-media-object mui-pull-left" src="' + faceImage + '" style="max-width: 2.5rem;max-height: 2.5rem;border-radius: 8%"/>' + 
                                                  '<div class="mui-media-body" style="line-height: 2.5rem;">' + 
                                                      friendArray[j].nickname
                                                  '</div>' + 

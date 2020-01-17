@@ -316,8 +316,8 @@
 		<pre id='h'></pre>
 		<script id='msg-template' type="text/template">
 			<% for(var i in record){ var item=record[i]; %>
-				<div class="msg-item <%= (item.sender=='self'?' msg-item-self':'') %>" msg-type='<%=(item.type)%>' msg-content='<%=(item.content)%>'>
-					<% if(item.sender=='self' ) { %>
+				<div class="msg-item <%= (item.sender==2?' msg-item-self':'') %>" msg-type='<%=(item.type)%>' msg-content='<%=(item.content)%>'>
+					<% if(item.sender==2 ) { %>
 						<img class="msg-user-img" style="float: right;" src="<%=(myFace)%>" alt="" />
 					<% } else { %>
 						<img class="msg-user-img" src="<%=(friendFace)%>" alt="" />
@@ -378,27 +378,10 @@
 				}
 			});
 			template.config('escape', false);
-            
-            var chatingWebview = plus.webview.currentWebview();
-            // 设置软键盘样式
-            // 设置为adjustResize在IOS系统会出现页面跳动
-            // 设置为adjustPan会隐藏Header，为了用户体验，故在IOS使用adjustPan
-            if (mui.os.ios) {
-                chatingWebview.setStyle({
-                	softinputMode: "adjustPan"
-                });
-            } else {
-                chatingWebview.setStyle({
-                	softinputMode: "adjustResize"
-                });
-            }
-            // 获取我的信息
-            var myInfo = app.getUserGlobalInfo();
-            // 获取好友的信息
-            var friendInfo = chatingWebview.friendInfo;
-            // 设置聊天窗口标题
-            document.getElementById("chatting-nickname").innerText = friendInfo.nickname;
-			
+
+            var myInfo;
+            var friendInfo;
+            var record;
 			if(mui.os.ios){
 				// 解决在ios上fixed元素focusin时位置出现错误的问题 
 				document.addEventListener('DOMContentLoaded',function(){
@@ -412,16 +395,7 @@
 					});
 				});
 			}
-            
-            var record = [{
-            	sender: 'zs',
-            	type: 'text',
-            	content: 'Hi，我是 MUI 小管家！'
-            }, {
-            	sender: 'self',
-            	type: 'text',
-            	content: '你好啊！'
-            }];
+
             var ui = {
             	body: document.querySelector('body'),
             	footer: document.querySelector('footer'),
@@ -443,6 +417,28 @@
             });
 			
 			mui.plusReady(function() {
+                var chatingWebview = plus.webview.currentWebview();
+                // 设置软键盘样式
+                // 设置为adjustResize在IOS系统会出现页面跳动
+                // 设置为adjustPan会隐藏Header，为了用户体验，故在IOS使用adjustPan
+                if (mui.os.ios) {
+                    chatingWebview.setStyle({
+                    	softinputMode: "adjustPan"
+                    });
+                } else {
+                    chatingWebview.setStyle({
+                    	softinputMode: "adjustResize"
+                    });
+                }
+                // 获取我的消息
+                myInfo = app.getUserGlobalInfo();
+                // 获取好友的信息
+                friendInfo = chatingWebview.friendInfo;
+                // 设置聊天窗口标题
+                document.getElementById("chatting-nickname").innerText = friendInfo.nickname;
+                // 获取本地的聊天记录
+                record = app.getChatRecord(myInfo.id, friendInfo.id);
+                
 				var showKeyboard = function() {
 					if (mui.os.ios) {
 						var webView = chatingWebview.nativeInstanceObject();
@@ -488,7 +484,7 @@
 							ui.boxMsgText.focus();
 						}, 150);
 						send({
-							sender: 'self',
+							sender: app.SELF,
 							type: 'text',
 							content: ui.boxMsgText.value.replace(new RegExp('\n', 'gm'), '<br/>')
 						});
@@ -533,7 +529,7 @@
 								var cmr = plus.camera.getCamera();
 								cmr.captureImage(function(path) {
 									send({
-										sender: 'self',
+										sender: app.SELF,
 										type: 'image',
 										content: "file://" + plus.io.convertLocalFileSystemURL(path)
 									});
@@ -542,7 +538,7 @@
 							case 2:
 								plus.gallery.pick(function(path) {
 									send({
-										sender: 'self',
+										sender: app.SELF,
 										type: 'image',
 										content: path
 									});
@@ -574,7 +570,7 @@
 					}, function(path) {
 						if (recordCancel) return;
 						send({
-							sender: 'self',
+							sender: app.SELF,
 							type: 'sound',
 							content: path
 						});
@@ -674,8 +670,8 @@
                 // 用模板来渲染HTML
             	ui.areaMsgList.innerHTML = template('msg-template', {
             		"record": record, // 聊天记录数组
-                    "myFace": myInfo.faceImage, // 我的头像
-                    "friendFace": friendInfo.faceImage // 好友的头像
+                    "myFace": myInfo.faceImage === "" ? app.defaultFace:myInfo.faceImage, // 我的头像
+                    "friendFace": friendInfo.faceImage === "" ? app.defaultFace : friendInfo.faceImage // 好友的头像
             	});
             	var msgItems = ui.areaMsgList.querySelectorAll('.msg-item');
             	[].forEach.call(msgItems, function(item, index) {

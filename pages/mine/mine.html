@@ -115,6 +115,9 @@
                 link_logout.addEventListener("tap", function(){
                     // 移除登录信息
                     app.userLogout();
+                    // 关闭websocket连接
+                    var chatWebview = plus.webview.getWebviewById("chat-list");
+                    mui.fire(chatWebview,"close_websocket");
                     // 跳转到登录页面
                     mui.openWindow("../login.html", "login.html");
                 })
@@ -137,7 +140,7 @@
                 if (app.isNotNull(user.faceImage)){
                     my_face_image.src = user.faceImage;
                 } else {
-                    my_face_image.src = "https://pic.feizl.com/upload/allimg/190123/gxtxjslmijsvh4m.jpg";
+                    my_face_image.src = app.defaultFace;
                 }
             }
             

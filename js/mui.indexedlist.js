@@ -91,12 +91,14 @@
 				event.preventDefault();
 			};
 			var findEnd = function(event) {
-				self.el.alert.classList.remove('active');
-				self.el.bar.classList.remove('active');
-				if (pointElement) {
-					pointElement.classList.remove('active');
-					pointElement = null;
-				}
+                if (self.el.alert != null) {
+                    self.el.alert.classList.remove('active');
+                    self.el.bar.classList.remove('active');
+                    if (pointElement) {
+                    	pointElement.classList.remove('active');
+                    	pointElement = null;
+                    }
+                }
 			};
 			self.el.bar.addEventListener($.EVENT_MOVE, function(event) {
 				findStart(event);

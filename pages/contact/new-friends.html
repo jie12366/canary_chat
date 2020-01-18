@@ -17,6 +17,37 @@
             <h1 class="mui-title title-color">新的朋友</h1>
         </header>
         
+        <script id="request-template" type="text/template">
+            <% for(var i in friendRequestList) { var friend = friendRequestList[i]; %>
+                <li class="btnOper mui-table-view-cell">
+                    <div class="mui-slider-right mui-disabled">
+                        <button friendId='<%=(friend.sendUserId)%>' friendNickname='<%=(friend.sendNickname)%>' acceptRemark='<%=(friend.acceptRemark)%>' class="ignoreRequest mui-btn mui-btn-grey">忽略</button>
+                        <button friendId='<%=(friend.sendUserId)%>' friendNickname='<%=(friend.sendNickname)%>' acceptRemark='<%=(friend.acceptRemark)%>' class="passRequest mui-btn mui-btn-yellow">通过</button>
+                    </div>
+                    <div class="mui-slider-handle">
+                        <div class="mui-table-cell"> 
+                            <div style="background-color: #fff;width: 21rem;"> 
+                                <img id="friend_face" src="<%=(friend.sendFaceImage)%>" width="40px" style="border-radius: 5%;float: left;"/>
+                                <div class="mui-media-body" style="float: left;margin-left: 1rem;"> 
+                                    <label id="friend_nickname">
+                                        <%=(friend.sendNickname)%>
+                                    </label>
+                                    <p id="friend_username" class="mui-ellipsis">
+                                        <%=(friend.verifyMessage)%>
+                                    </p>
+                                </div>
+                                <div style="float: right">
+                                    <p id="request_status" style="line-height:40px">
+                                        <%=(friend.requestStatus)%>
+                                    </p> 
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+            <% } %>
+        </script>
+        
         <div class="mui-content" style="margin-top: -1.25rem;">
             <div class="mui-input-row mui-search" style="margin-top: 1.25rem;">
                 <input id="search_txt" type="search" class="mui-input-clear" placeholder="雀信号"
@@ -28,9 +59,12 @@
         </div>
         
 		<script src="../../js/mui.js"></script>
+        <script src="../../js/arttmpl.js"></script>
         <script src="../../js/app.js"></script>
+        <script src="html5plus://ready"></script>  
 		<script type="text/javascript">
 			mui.init()
+            template.config('escape', false);
             var user;
             mui.plusReady(function () {
                user = app.getUserGlobalInfo()
@@ -103,16 +137,16 @@
                 var friendRequestList = app.getFriendRequest();
                 var friend_request_list = document.getElementById("friend_request_list");
                 if (friendRequestList.length > 0) {
-                    var requestHtml = "";
                     // 将请求列表渲染并添加到html的列表中
                     for (var i = 0; i < friendRequestList.length; ++i) {
                         // 如果好友还没上传头像，这里就使用默认头像
                         if (!app.isNotNull(friendRequestList[i].sendFaceImage)) {
                             friendRequestList[i].sendFaceImage = app.defaultFace;
                         }
-                        requestHtml += renderFriendsRequest(friendRequestList[i]);
                     }
-                    friend_request_list.innerHTML = requestHtml;
+                    friend_request_list.innerHTML = template('request-template', {
+                        "friendRequestList": friendRequestList
+                    })
                     
                     // 动态绑定忽略请求事件
                     mui('.btnOper').on("tap", ".ignoreRequest", function(){
@@ -171,34 +205,6 @@
                 		}
                 	}
                 });
-            }
-            
-            // 渲染好友请求
-            function renderFriendsRequest(friend){
-                let html = "";
-                // 拼接好友请求的html和对应的值
-                html = '<li class="btnOper mui-table-view-cell">' + 
-                            '<div class="mui-slider-right mui-disabled">' + 
-                                '<button friendId="' + friend.sendUserId + '" friendNickname="' + friend.sendNickname +'" acceptRemark="' + friend.acceptRemark + '" class="ignoreRequest mui-btn mui-btn-grey">忽略</button>' + 
-                                '<button friendId="' + friend.sendUserId + '" friendNickname="' + friend.sendNickname +'" acceptRemark="' + friend.acceptRemark + '" class="passRequest mui-btn mui-btn-yellow">通过</button>' + 
-                            '</div>' + 
-                            '<div class="mui-slider-handle">' + 
-                                '<div class="mui-table-cell">' + 
-                                    '<div style="background-color: #fff;width: 21rem;">' + 
-                                        '<img id="friend_face" src="' + friend.sendFaceImage +'" width="40px" style="border-radius: 5%;float: left;"/>' + 
-                                        '<div class="mui-media-body" style="float: left;margin-left: 1rem;">' + 
-                                            '<label id="friend_nickname">' + friend.sendNickname +'</label>' + 
-                                            '<p id="friend_username" class="mui-ellipsis">' + friend.verifyMessage + '</p>' + 
-                                        '</div>' + 
-                                        '<div style="float: right">' +
-                                            '<p id="request_status" style="line-height:40px">' + friend.requestStatus + '</p>' + 
-                                        '</div>' + 
-                                    '</div>' + 
-                                '</div>' + 
-                            '</div>' + 
-                        '</li>';
-                
-                return html;
             }
 		</script>
 	</body>

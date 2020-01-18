@@ -21,6 +21,11 @@
             .mui-indexed-list-bar > a{
                 color: #000000;
             }
+            #contactList {
+                height: 100%;
+                overflow: auto;
+                -webkit-overflow-scrolling: touch;
+            }
 		</style>
 	</head>
 
@@ -28,6 +33,32 @@
 		<header class="mui-bar mui-bar-nav title">
 			<h1 class="mui-title title-color">通讯录</h1>
 		</header>
+        <script id='contact-template' type="text/template">
+            <li class="mui-table-view-cell mui-media" id = "toNewFriend">
+                <a id="link_new_frined" href="javascript:;"> 
+                    <img style="height: 2.5rem;" class="mui-media-object mui-pull-left" src="../../images/newFriends.png">
+                    <div class="mui-media-body" style="line-height: 2.5rem"> 
+                        新的朋友 
+                    </div>
+                </a>
+            </li>
+        	<% for(var i in contactArray){ var friendArray=contactArray[i]; %>
+                <% if (friendArray.length > 0) {%>
+                    <li data-group="<%=(enWords[i])%>" style="font-size: 12px" class="mui-table-view-divider mui-indexed-list-group">
+                        <%=(enWords[i])%>
+                    </li>
+                    <% for(var j in friendArray) { var item = friendArray[j]; %>
+                        <% var faceImage = item.faceImage == ""? defaultFace : item.faceImage; %>
+                        <li id="to_friend_info" friendUsername='<%=(item.username)%>' class="mui-media mui-table-view-cell mui-indexed-list-item" style="padding: 0.625rem 1rem;">
+                            <img class="mui-media-object mui-pull-left" src="<%=(faceImage)%>" style="max-width: 2.5rem;max-height: 2.5rem;border-radius: 8%"/>
+                             <div class="mui-media-body" style="line-height: 2.5rem;">
+                                 <%=(item.nickname)%>
+                             </div>
+                        </li>
+                    <% } %>
+                <% } %>
+        	<% } %>
+        </script>
 		<div class="mui-content">
 			<div id='list' class="mui-indexed-list">
 				<div class="mui-indexed-list-search mui-input-row mui-search" style="margin-bottom: 0.625rem;">
@@ -63,9 +94,7 @@
 					<a>Z</a>
                     <a>#</a>
 				</div>
-				<div class="mui-indexed-list-alert"></div>
 				<div class="mui-indexed-list-inner">
-					<div class="mui-indexed-list-empty-alert">没有数据</div>
 					<ul class="mui-table-view" id="contactList"></ul>
 				</div>
 			</div>
@@ -74,8 +103,11 @@
         <script src="../../js/app.js"></script>
         <script src="../../js/util/pinyin-util.js"></script>
 		<script src="../../js/mui.indexedlist.js"></script>
+        <script src="../../js/arttmpl.js"></script>
+        <script src="html5plus://ready"></script>  
 		<script type="text/javascript" charset="utf-8">
 			mui.init();
+            template.config('escape', false);
 			mui.ready(function() {
                 // 获取好友列表数据
                 getFriendList();
@@ -149,6 +181,7 @@
                 return 26;
             }
             
+            // 加载并渲染好友列表
             function renderFriendListPage(){
                 // 1. 从本地获取联系人列表
                 var friendList = app.getFriendList();
@@ -164,35 +197,13 @@
                     // 2.4 放进好友列表的数组中
                     contactArray[order].push(friend);
                 }
-                // 3. 构建通讯录的HTML进行数据渲染
-                var contactHtml = '<li class="mui-table-view-cell mui-media" id = "toNewFriend">' + 
-                                    '<a id="link_new_frined" href="javascript:;">' + 
-                                        '<img style="height: 2.5rem;" class="mui-media-object mui-pull-left" src="../../images/newFriends.png">' + 
-                                        '<div class="mui-media-body" style="line-height: 2.5rem">' + 
-                                            '新的朋友' + 
-                                        '</div>' + 
-                                    '</a>' + 
-                                '</li>';
-                // 3.1 第一层循环分组
-                for(var i = 0; i < contactArray.length; ++i){
-                    var friendArray = contactArray[i];
-                    if (friendArray.length > 0) {
-                        // 3.2 按分组进行渲染
-                        var nicknameStart = enWords[i];
-                        contactHtml += '<li data-group="' + nicknameStart + '" style="font-size: 12px" class="mui-table-view-divider mui-indexed-list-group">' + nicknameStart + '</li>';
-                        for (var j = 0; j < friendArray.length; ++j){
-                            var faceImage = friendArray[j].faceImage == ""? app.defaultFace : friendArray[j].faceImage;
-                            contactHtml += '<li id="to_friend_info" friendUsername=' + friendArray[j].username + ' class="mui-media mui-table-view-cell mui-indexed-list-item" style="padding: 0.625rem 1rem;">' + 
-                                                '<img class="mui-media-object mui-pull-left" src="' + faceImage + '" style="max-width: 2.5rem;max-height: 2.5rem;border-radius: 8%"/>' + 
-                                                 '<div class="mui-media-body" style="line-height: 2.5rem;">' + 
-                                                     friendArray[j].nickname
-                                                 '</div>' + 
-                                            '</li>';
-                        }
-                    }
-                }
                 // 4. 渲染数据到HTML中
-                document.getElementById("contactList").innerHTML = contactHtml;
+                var contactList = document.getElementById("contactList");
+                contactList.innerHTML = template('contact-template', {
+                	"contactArray": contactArray,
+                    "defaultFace": app.defaultFace,
+                    "enWords": enWords
+                });
                 // 5. 绑定跳转新朋友页面事件
                 mui('#toNewFriend').on("tap", "#link_new_frined", function(){
                     mui.openWindow("new-friends.html", "new-friends.html");

@@ -168,7 +168,7 @@
                         // 获取开始时间的时间戳
                         var startTime = Date.parse(new Date());
                         // 阻塞直到webscoket连接建立完毕
-                        while(Chat.socket.readyState !== WebSocket.OPEN){
+                        while(Chat.socket != null){
                             var endTime = Date.parse(new Date());
                             if (endTime - startTime > 3000) {
                                 app.showToast("发送失败,请重试", "error");
@@ -180,22 +180,59 @@
                     }
                 },
                 sendMsg: function (msg) {
-                    var chatMsg = JSON.parse(msg).chatMsgBo;
+                    var msgContent = JSON.parse(msg);
+                    var chatMsg = msgContent.chatMsgBo;
                     // 获取消息内容
                     var content = chatMsg.content;
-                    Chat.socket.send(msg);
+                    if (chatMsg.type == 'text') {
+                        Chat.socket.send(msg);
+                    } else if (chatMsg.type == 'image') {
+                        // 将平台绝对路径转换成本地URL路径
+                        var url = plus.io.convertAbsoluteFileSystem(chatMsg.content)
+                        // 通过本地URL路径获取目录对象或文件对象
+                        plus.io.resolveLocalFileSystemURL(url, function(entry) {
+                            entry.file(function(evt) {
+                                var reader = new plus.io.FileReader();
+                                reader.readAsDataURL(evt);
+                                reader.onloadend = function(e) {
+                                    chatMsg.content = reader.result;
+                                    var dataContent = new app.MsgContent(app.CHAT, chatMsg, null);
+                                    Chat.socket.send(JSON.stringify(dataContent));
+                                }
+                            })
+                        }, function(e) {
+                            // 执行错误
+                            mui.toast(e.message);
+                        });
+                    } else if (chatMsg.type == 'audio') {
+                        // 通过本地URL路径获取目录对象或文件对象
+                        plus.io.resolveLocalFileSystemURL(chatMsg.content, function(entry) {
+                            entry.file(function(evt) {
+                                var reader = new plus.io.FileReader();
+                                reader.readAsDataURL(evt);
+                                reader.onloadend = function(e) {
+                                    chatMsg.content = reader.result;
+                                    var dataContent = new app.MsgContent(app.CHAT, chatMsg, null);
+                                    Chat.socket.send(JSON.stringify(dataContent));
+                                }
+                            })
+                        }, function(e) {
+                            // 执行错误
+                            mui.toast(e.message);
+                        });
+                    }
                     // 获取好友的账号id
                     var friendId = chatMsg.receiverId
                     // 调用聊天页面的方法来刷新消息列表
                     var chatWebview = plus.webview.getWebviewById("chating-" + friendId);
                     var info = {
                     	sender: app.SELF,
-                    	type: 'text', 
+                    	type: chatMsg.type, 
                     	content: content
                     };
                     chatWebview.evalJS("refreshMsgList('" + JSON.stringify(info) + "')");
                     // 保存聊天记录到本地(我发送给好友的消息)
-                    app.saveChatRecord(chatMsg.senderId, friendId, app.SELF, "text", content);
+                    app.saveChatRecord(chatMsg.senderId, friendId, app.SELF, chatMsg.type, content);
                     // 保存聊天快照
                     app.saveChatSnapshot(chatMsg.senderId, friendId, content, true);
                     // 重新渲染聊天快照列表
@@ -233,7 +270,7 @@
                     var msgContent = JSON.parse(e.data);
                     var action = msgContent.action;
                     // 如果是重新拉取好友列表
-                    if (action === app.PULL_FRIEND) {
+                    if (action == app.PULL_FRIEND) {
                         // 刷新我的好友列表
                         var chatList = plus.webview.getWebviewById("chat-list");
                         mui.fire(chatList, "refresh_contact");
@@ -249,7 +286,7 @@
                     if (chatWebview != null) {
                         var finfo = {
                         	sender: app.FRIEND,
-                        	type: 'text', 
+                        	type: chatMsg.type, 
                         	content: content
                         };
                         // 调用wsWebview中的方法来发送消息
@@ -265,7 +302,7 @@
                     Chat.socket.send(JSON.stringify(msgContentSign))
                     
                     // 保存聊天记录到本地(接收到好友的消息)
-                    app.saveChatRecord(chatMsg.receiverId, friendId, app.FRIEND, "text", content);
+                    app.saveChatRecord(chatMsg.receiverId, friendId, app.FRIEND, chatMsg.type, content);
                     // 保存聊天快照
                     app.saveChatSnapshot(chatMsg.receiverId, friendId, content, isRead);
                     // 重新渲染聊天快照列表

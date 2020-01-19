@@ -322,15 +322,15 @@
 					<% } else { %>
 						<img class="msg-user-img" src="<%=(friendFace)%>" alt="" />
 					<% } %>
+                    
 					<div class="msg-content">
 						<div class="msg-content-inner">
 							<% if(item.type=='text' ) { %>
 								<%=( item.content|| '&nbsp;&nbsp;') %>
 							<% } else if(item.type=='image' ) { %>
 								<img class="msg-content-image" src="<%=(item.content)%>" style="max-width: 100px;" />
-							<% } else if(item.type=='sound' ) { %>
-								<span class="mui-icon mui-icon-mic" style="font-size: 18px;font-weight: bold;"></span>
-								<span class="play-state">点击播放</span>
+							<% } else if(item.type=='audio' ) { %>
+								<span class="play-state"><img src="../../images/audio.png"></span>
 							<% } %>
 						</div>
 						<div class="msg-content-arrow"></div>
@@ -570,8 +570,8 @@
 					}, function(path) {
 						if (recordCancel) return;
 						send({
-							sender: app.SELF,
-							type: 'sound',
+							sender: app.SaudioELF,
+							type: 'audio',
 							content: path
 						});
 					}, function(e) {
@@ -653,14 +653,14 @@
             function msgItemTap(msgItem, event) {
             	var msgType = msgItem.getAttribute('msg-type');
             	var msgContent = msgItem.getAttribute('msg-content')
-            	if (msgType == 'sound') {
+            	if (msgType == 'audio') {
             		player = plus.audio.createPlayer(msgContent);
             		var playState = msgItem.querySelector('.play-state');
             		playState.innerText = '正在播放...';
             		player.play(function() {
-            			playState.innerText = '点击播放';
+            			playState.innerHTML = '<img src="../../images/audio.png">';
             		}, function(e) {
-            			playState.innerText = '点击播放';
+            			playState.innerHTML = '<img src="../../images/audio.png">';
             		});
             	}
             };
@@ -702,16 +702,13 @@
                     app.showToast("当前无网络连接", "error");
                     return;
                 }
-                // 判断消息类型，调用对应的API来进行消息发送
-                if (info.type == "text") {
-                    // 构建一个聊天的ChatMsg
-                    var chatMsgBo = new app.ChatMsgBo(myInfo.id, friendInfo.id, null, "text", info.content);
-                    // 构建MsgContent
-                    var msgContent = new app.MsgContent(app.CHAT, chatMsgBo, null);
-                    var wsWebview = plus.webview.getWebviewById("chat-list");
-                    // 调用wsWebview中的方法来发送消息
-                    wsWebview.evalJS("Chat.chat('" + JSON.stringify(msgContent) + "')");
-                }
+                // 构建一个聊天的ChatMsg
+                var chatMsgBo = new app.ChatMsgBo(myInfo.id, friendInfo.id, null, info.type, info.content);
+                // 构建MsgContent
+                var msgContent = new app.MsgContent(app.CHAT, chatMsgBo, null);
+                var wsWebview = plus.webview.getWebviewById("chat-list");
+                // 调用wsWebview中的方法来发送消息
+                wsWebview.evalJS("Chat.chat('" + JSON.stringify(msgContent) + "')");
             };
             
             function refreshMsgList(infoStr){
